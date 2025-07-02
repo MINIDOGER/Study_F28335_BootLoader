@@ -50,6 +50,7 @@
                                     <listOptionValue value="${workspace_loc:/${ProjName}/TI/DSP2833x_common/include}"/>
                                     <listOptionValue value="${workspace_loc:/${ProjName}/TI/DSP2833x_headers/include}"/>
                                     <listOptionValue value="${workspace_loc:/${ProjName}/APP/include}"/>
+                                    <listOptionValue value="${workspace_loc:/${ProjName}/TI/Flash28335_API_V210/include}"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.ABI.1719924046" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.ABI" value="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.ABI.coffabi" valueType="enumerated"/>
                                 <inputType id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compiler.inputType__C_SRCS.1012477360" name="C Sources" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compiler.inputType__C_SRCS"/>
@@ -70,6 +71,7 @@
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.linkerID.LIBRARY.1619539792" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.linkerID.LIBRARY" valueType="libs">
                                     <listOptionValue value="libc.a"/>
+                                    <listOptionValue value="${workspace_loc:/${ProjName}/TI/Flash28335_API_V210/lib/Flash28335_API_V210.lib}"/>
                                 </option>
                                 <inputType id="com.ti.ccstudio.buildDefinitions.C2000_22.6.exeLinker.inputType__CMD_SRCS.909190527" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.exeLinker.inputType__CMD_SRCS"/>
                                 <inputType id="com.ti.ccstudio.buildDefinitions.C2000_22.6.exeLinker.inputType__CMD2_SRCS.1227539204" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.exeLinker.inputType__CMD2_SRCS"/>
