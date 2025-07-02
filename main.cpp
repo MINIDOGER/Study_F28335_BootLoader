@@ -1,7 +1,25 @@
 #include "DSP2833x_Device.h"
 #include "DSP2833x_Examples.h"
 
-int main(void)
+#include "led.h"
+
+void delay(void)
 {
-	return 0;
+    Uint16 i;
+	Uint32 j;
+	for(i=0;i<32;i++)
+		for (j = 0; j < 100000; j++);
+}
+
+void main(void)
+{
+	InitSysCtrl();
+	LED_Init();
+
+
+	while (1)
+	{
+		LED1_TOGGLE;
+		delay();
+	}
 }
