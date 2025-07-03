@@ -2,25 +2,30 @@
 #include "DSP2833x_Examples.h"
 // #include "Flash2833x_API_Library.h" //添加了flash操作的api和lib，还没有在cmd文件配置，参考https://blog.csdn.net/qq_17525633/article/details/128456010
 
-#include "led.h"
-
-void delay(void)
-{
-    Uint16 i;
-	Uint32 j;
-	for(i=0;i<32;i++)
-		for (j = 0; j < 100000; j++);
-}
+#include "Debug_LED.h"
+#include "Timer.h"
 
 void main(void)
 {
 	InitSysCtrl();
+	InitGpio();
+
+	InitPieCtrl();
+	IER = 0x0000;
+	IFR = 0x0000;
+	InitPieVectTable();
+
 	// InitFlash();
-	LED_Init();
+
+	InitDebugLED();
+	Timer.InitTimer(150, 100000);
 
 	while (1)
 	{
-		LED1_TOGGLE;
-		delay();
+		Timer.FlagTimer();
+		if(Timer.TimeBaseFlag.bit.Timer1s == 1)
+		{
+			DEBUG_LED_Toggle();
+		}
 	}
 }
