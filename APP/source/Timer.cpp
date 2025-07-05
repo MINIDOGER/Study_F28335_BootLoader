@@ -11,21 +11,21 @@ void ClassTimer::InitTimer(float Freq, float Period)
     EALLOW;
     SysCtrlRegs.PCLKCR3.bit.CPUTIMER0ENCLK = 1; // CPU Timer 0
 
-    InitCpuTimers();//初始化三个计时器
-    // CpuTimer0.RegsAddr = &CpuTimer0Regs;
-    // CpuTimer0Regs.PRD.all  = 0xFFFFFFFF;
-    // CpuTimer0Regs.TPR.all  = 0;
-    // CpuTimer0Regs.TPRH.all = 0;
-    // CpuTimer0Regs.TCR.bit.TSS = 1;
-    // CpuTimer0Regs.TCR.bit.TRB = 1;
-    // CpuTimer0.InterruptCount = 0;
+    // InitCpuTimers();//初始化三个计时器
+    CpuTimer0.RegsAddr = &CpuTimer0Regs;
+    CpuTimer0Regs.PRD.all  = 0xFFFFFFFF;
+    CpuTimer0Regs.TPR.all  = 0;
+    CpuTimer0Regs.TPRH.all = 0;
+    CpuTimer0Regs.TCR.bit.TSS = 1;
+    CpuTimer0Regs.TCR.bit.TRB = 1;
+    CpuTimer0.InterruptCount = 0;
 
     ConfigCpuTimer(&CpuTimer0, Freq, Period);
     CpuTimer0Regs.TCR.bit.TSS = 0;
 
     IER |= M_INT1;
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1; 
-    PieVectTable.TINT0 = &TIM0_IRQn;
+    PieVectTable.TINT0 = &TIM0_ISR;
     
     EDIS;
 
@@ -53,7 +53,7 @@ void ClassTimer::FlagTimer(void)
     }
 }
 
-interrupt void TIM0_IRQn(void)
+interrupt void TIM0_ISR(void)
 {
     Timer.clk100ms++;
 

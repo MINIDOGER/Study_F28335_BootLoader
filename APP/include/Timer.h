@@ -4,7 +4,7 @@
 #include "DSP2833x_Device.h"
 #include "DSP2833x_Examples.h"
 
-interrupt void TIM0_IRQn(void);
+interrupt void TIM0_ISR(void);
 
 typedef union
 {
