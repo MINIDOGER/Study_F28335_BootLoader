@@ -22,6 +22,8 @@ void main(void)
 
 	InitDebugLED();
 	SCI.InitSCI();
+	msg = 0x11;
+	SCI.SendString(&msg, 1);
 	Timer.InitTimer(150, 100000);
 
 	while(1)
@@ -38,7 +40,7 @@ void main(void)
 			SCI.SendString(&msg, 1);
 
 			// SciaRegs.SCIFFRX.bit.RXFFIENA = 1;
-			// SCI.UpData = 1;
+			SCI.UpData = 1;
 		}
 	}
 }

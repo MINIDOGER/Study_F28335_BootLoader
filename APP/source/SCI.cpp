@@ -11,14 +11,15 @@ void ClassSCI::InitSCI(void)
     Uint16 temp;
     temp = 37500000/(8*115200)-1;
     
+    InitSciGpio();
+
     EALLOW;
 
     SysCtrlRegs.PCLKCR0.bit.SCIAENCLK = 1;
 
-    InitSciGpio();
-
     SciaRegs.SCIFFTX.all = 0xE04F;
-    SciaRegs.SCIFFRX.all = 0x2060;
+    SciaRegs.SCIFFRX.bit.RXFIFORESET = 0;
+    SciaRegs.SCIFFRX.all = 0x2061;
     SciaRegs.SCIFFCT.all = 0x0;
 
     SciaRegs.SCICCR.all = 0x0007;
@@ -32,6 +33,8 @@ void ClassSCI::InitSCI(void)
 
     SciaRegs.SCICTL1.all = 0x0023;
 
+    IER |= M_INT9;
+    PieCtrlRegs.PIEIER9.bit.INTx1=1;
     PieVectTable.SCIRXINTA = &SCIARX_ISR;
 
     EDIS;
