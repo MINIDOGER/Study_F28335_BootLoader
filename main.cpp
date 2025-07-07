@@ -6,7 +6,10 @@
 #include "SCI.h"
 #include "Timer.h"
 
-Uint8 msg = 0x00;
+Uint8 TimeCnt = 0x00;
+Uint8 Msg = 0x00;
+Uint8 NumFFRX = 0x00;
+Uint8 CodeData[10];
 
 void main(void)
 {
@@ -22,8 +25,8 @@ void main(void)
 
 	InitDebugLED();
 	SCI.InitSCI();
-	msg = 0x11;
-	SCI.SendString(&msg, 1);
+	Msg = 0x11;
+	SCI.SendString(&Msg, 1);
 	Timer.InitTimer(150, 100000);
 
 	while(1)
@@ -32,15 +35,32 @@ void main(void)
 		if(Timer.TimeBaseFlag.bit.Timer1s == 1)
 		{
 			DEBUG_LED_Toggle();
+			TimeCnt++;
 		}
 
 		if(SCI.UpData == 1)
 		{
-			msg = 0xCD;
-			SCI.SendString(&msg, 1);
+			Msg = 0xCD;
+			SCI.SendString(&Msg, 1);
+			while(TimeCnt < 0x0A)
+			{
+				if(SciaRegs.SCIFFRX.bit.RXFFST > 0)
+				{
+					NumFFRX = ScicRegs.SCIFFRX.bit.RXFFST;
+					for(Uint8 i = 0; i < NumFFRX; i++)
+					{
+						CodeData[i] = ScicRegs.SCIRXBUF.bit.RXDT;
+					}
+				}
+			}
 
 			// SciaRegs.SCIFFRX.bit.RXFFIENA = 1;
-			SCI.UpData = 1;
+			SCI.UpData = 0;
+		}
+
+		if(TimeCnt == 0x0A && SCI.UpData == 0)
+		{
+
 		}
 	}
 }
