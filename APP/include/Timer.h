@@ -24,6 +24,7 @@ class ClassTimer
     unsigned int CntBak1s;
 
     public:
+    Uint8 TimeCnt;
     unsigned int clk100ms;
     TimerBase TimeBaseFlag;
 

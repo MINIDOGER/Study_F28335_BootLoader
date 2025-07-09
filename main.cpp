@@ -1,15 +1,12 @@
 #include "DSP2833x_Device.h"
 #include "DSP2833x_Examples.h"
-// #include "Flash2833x_API_Library.h" //添加了flash操作的api和lib，还没有在cmd文件配置，参考https://blog.csdn.net/qq_17525633/article/details/128456010
+
+#include "Flash2833x_API_Config.h"
+#include "Flash2833x_API_Library.h" //添加了flash操作的api和lib，还没有在cmd文件配置，参考https://blog.csdn.net/qq_17525633/article/details/128456010
 
 #include "Debug_LED.h"
 #include "SCI.h"
 #include "Timer.h"
-
-Uint8 TimeCnt = 0x00;
-Uint8 Msg = 0x00;
-Uint8 NumFFRX = 0x00;
-Uint8 CodeData[10];
 
 void main(void)
 {
@@ -25,8 +22,8 @@ void main(void)
 
 	InitDebugLED();
 	SCI.InitSCI();
-	Msg = 0x11;
-	SCI.SendString(&Msg, 1);
+	SCI.Msg = 0x11;
+	SCI.SendString(&SCI.Msg, 1);
 	Timer.InitTimer(150, 100000);
 
 	while(1)
@@ -35,30 +32,12 @@ void main(void)
 		if(Timer.TimeBaseFlag.bit.Timer1s == 1)
 		{
 			DEBUG_LED_Toggle();
-			TimeCnt++;
+			Timer.TimeCnt++;
 		}
 
-		if(SCI.UpData == 1)
-		{
-			Msg = 0xCD;
-			SCI.SendString(&Msg, 1);
-			while(TimeCnt < 0x0A)
-			{
-				if(SciaRegs.SCIFFRX.bit.RXFFST > 0)
-				{
-					NumFFRX = ScicRegs.SCIFFRX.bit.RXFFST;
-					for(Uint8 i = 0; i < NumFFRX; i++)
-					{
-						CodeData[i] = ScicRegs.SCIRXBUF.bit.RXDT;
-					}
-				}
-			}
+		SCI.UpDataTask();
 
-			// SciaRegs.SCIFFRX.bit.RXFFIENA = 1;
-			SCI.UpData = 0;
-		}
-
-		if(TimeCnt == 0x0A && SCI.UpData == 0)
+		if(Timer.TimeCnt == 0x0A && SCI.UpData == 0)
 		{
 
 		}

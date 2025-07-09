@@ -7,6 +7,7 @@ void ClassTimer::InitTimer(float Freq, float Period)
     clk100ms = 0;
     CntBak500ms = 0;
     CntBak1s = 0;
+    TimeCnt = 0x00;
 
     EALLOW;
     SysCtrlRegs.PCLKCR3.bit.CPUTIMER0ENCLK = 1; // CPU Timer 0

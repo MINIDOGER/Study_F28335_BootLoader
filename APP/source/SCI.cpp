@@ -1,12 +1,14 @@
 #include "SCI.h"
-#include "General.h"
 
 ClassSCI SCI;
 
 void ClassSCI::InitSCI(void)
 {
     DataBuff.DataCnt = 0;
+    DataBuff.IsLowBety = 1;
     UpData = 0;
+    Msg = 0;
+    NumFFRX = 0;
 
     Uint16 temp;
     temp = 37500000/(8*115200)-1;
@@ -64,6 +66,51 @@ void ClassSCI::SendString(Uint8* Data, Uint16 Len)
     }
 }
 
+void ClassSCI::UpDataTask()
+{
+    if(SCI.UpData == 1)
+    {
+        Uint16 temp = 0;
+        Msg = 0xCD;
+        SendString(&Msg, 1);
+        Timer.TimeCnt = 0;
+        while(Timer.TimeCnt < 0x14)
+        {
+            Timer.FlagTimer();
+            if(Timer.TimeBaseFlag.bit.Timer500ms == 1)
+            {
+                DEBUG_LED_Toggle();
+                Timer.TimeCnt++;
+            }
+            if(SciaRegs.SCIFFRX.bit.RXFFST > 0)
+            {
+                Timer.TimeCnt = 0;
+                NumFFRX = SciaRegs.SCIFFRX.bit.RXFFST;
+                for(Uint8 i = 0; i < NumFFRX; i++)
+                {
+                    if(DataBuff.IsLowBety)
+                    {
+                        temp = SciaRegs.SCIRXBUF.bit.RXDT;
+                        DataBuff.IsLowBety = 0;
+                    }
+                    else
+                    {
+                        DataBuff.Data[DataBuff.DataCnt] = temp = SciaRegs.SCIRXBUF.bit.RXDT << 8 | temp;
+                        DataBuff.IsLowBety = 1;
+                        DataBuff.DataCnt++;
+                    }
+                }
+                NumFFRX = 0;
+                SciaRegs.SCIFFRX.bit.RXFIFORESET = 0;
+                SciaRegs.SCIFFRX.bit.RXFIFORESET = 1;
+            }
+        }
+
+        SciaRegs.SCIFFRX.bit.RXFFIENA = 1;
+        SCI.UpData = 0;
+    }
+}
+
 interrupt void SCIARX_ISR(void)
 {
     Uint8 temp = SciaRegs.SCIRXBUF.bit.RXDT;
@@ -74,9 +121,6 @@ interrupt void SCIARX_ISR(void)
         {
             SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = temp;
             SCI.DataBuff.DataCnt++;
-
-
-
         }
         break;
 
