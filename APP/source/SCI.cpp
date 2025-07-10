@@ -4,11 +4,7 @@ ClassSCI SCI;
 
 void ClassSCI::InitSCI(void)
 {
-    DataBuff.DataCnt = 0;
-    DataBuff.IsLowBety = 1;
-    UpData = 0;
-    Msg = 0;
-    NumFFRX = 0;
+    InitValue();
 
     Uint16 temp;
     temp = 37500000/(8*115200)-1;
@@ -20,8 +16,8 @@ void ClassSCI::InitSCI(void)
     SysCtrlRegs.PCLKCR0.bit.SCIAENCLK = 1;
 
     SciaRegs.SCIFFTX.all = 0xE04F;
-    SciaRegs.SCIFFRX.bit.RXFIFORESET = 0;
-    SciaRegs.SCIFFRX.all = 0x2061;
+    SciaRegs.SCIFFRX.all = 0x0061;
+    SciaRegs.SCIFFRX.bit.RXFIFORESET = 1;
     SciaRegs.SCIFFCT.all = 0x0;
 
     SciaRegs.SCICCR.all = 0x0007;
@@ -40,6 +36,16 @@ void ClassSCI::InitSCI(void)
     PieVectTable.SCIRXINTA = &SCIARX_ISR;
 
     EDIS;
+}
+
+void ClassSCI::InitValue(void)
+{
+    memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
+    DataBuff.DataCnt = 0;
+    DataBuff.IsLowByte = 0;
+    UpData = 0;
+    Msg = 0;
+    NumFFRX = 0;
 }
 
 Uint8 ClassSCI::SendByte(Uint8 Byte)
@@ -68,7 +74,7 @@ void ClassSCI::SendString(Uint8* Data, Uint16 Len)
 
 void ClassSCI::UpDataTask()
 {
-    if(SCI.UpData == 1)
+    if(UpData == 1)
     {
         Uint16 temp = 0;
         Msg = 0xCD;
@@ -88,26 +94,23 @@ void ClassSCI::UpDataTask()
                 NumFFRX = SciaRegs.SCIFFRX.bit.RXFFST;
                 for(Uint8 i = 0; i < NumFFRX; i++)
                 {
-                    if(DataBuff.IsLowBety)
+                    if(DataBuff.IsLowByte)
                     {
-                        temp = SciaRegs.SCIRXBUF.bit.RXDT;
-                        DataBuff.IsLowBety = 0;
+                        DataBuff.Data[DataBuff.DataCnt] = SciaRegs.SCIRXBUF.bit.RXDT | temp << 8;
+                        DataBuff.IsLowByte = 0;
+                        DataBuff.DataCnt++;
                     }
                     else
                     {
-                        DataBuff.Data[DataBuff.DataCnt] = temp = SciaRegs.SCIRXBUF.bit.RXDT << 8 | temp;
-                        DataBuff.IsLowBety = 1;
-                        DataBuff.DataCnt++;
+                        temp = SciaRegs.SCIRXBUF.bit.RXDT;
+                        DataBuff.IsLowByte = 1;
                     }
                 }
                 NumFFRX = 0;
-                SciaRegs.SCIFFRX.bit.RXFIFORESET = 0;
-                SciaRegs.SCIFFRX.bit.RXFIFORESET = 1;
             }
         }
-
+        InitValue();
         SciaRegs.SCIFFRX.bit.RXFFIENA = 1;
-        SCI.UpData = 0;
     }
 }
 
@@ -138,15 +141,15 @@ interrupt void SCIARX_ISR(void)
 
         case 5:
         SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = temp;
-        if(General.CRC16Modbus(SCI.DataBuff.Data, 4) == 0xE831)
+        if(General.CRC16Modbus(SCI.DataBuff.Data, 4) == (SCI.DataBuff.Data[4] << 8 | SCI.DataBuff.Data[5]))
         {
             SciaRegs.SCIFFRX.bit.RXFFIENA = 0;
-            SCI.DataBuff.DataCnt = 0;
+            SCI.InitValue();
             SCI.UpData = 1;
         }
         else
         {
-            SCI.DataBuff.DataCnt = 0;
+            SCI.InitValue();
         }
 
         break;

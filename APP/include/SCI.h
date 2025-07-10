@@ -4,6 +4,7 @@
 #include "DSP2833x_Device.h"
 #include "DSP2833x_Examples.h"
 
+#include <string.h>
 #include "Flash2833x_API_Config.h"
 #include "Flash2833x_API_Library.h"
 
@@ -33,7 +34,7 @@ public:
     {
         Uint16 Data[261];   // 数据数组
         Uint16 DataCnt;  // 数据计数
-        Uint8 IsLowBety;
+        Uint8 IsLowByte;
     } DataBuff;
 
     Uint8 UpData;  // 更新标志
@@ -42,6 +43,7 @@ public:
 
     // 公共成员函数
     void InitSCI(void);                     // 初始化SCI
+    void InitValue(void);
     void SendString(Uint8* Data, Uint16 Len);  // 发送字符串
     void UpDataTask();
 };
