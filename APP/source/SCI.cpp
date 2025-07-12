@@ -43,6 +43,7 @@ void ClassSCI::InitValue(void)
     memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
     DataBuff.DataCnt = 0;
     DataBuff.IsLowByte = 0;
+    DataBuff.TargeCnt = 0x06;
     UpData = 0;
     Msg = 0;
     NumFFRX = 0;
@@ -107,6 +108,41 @@ void ClassSCI::UpDataTask()
                     }
                 }
                 NumFFRX = 0;
+                if(DataBuff.DataCnt == DataBuff.TargeCnt)
+                {
+                    if(DataBuff.Data[0] >> 8 != 0x01)
+                    {
+                        Msg = ErrorDevice;
+                    }
+                    else if((((DataBuff.Data[0] & 0xFF) << 8) | (DataBuff.Data[1] >> 8)) != 0xCDFF &&
+                        (((DataBuff.Data[0] & 0xFF) << 8) | (DataBuff.Data[1] >> 8)) != 0xCDDA &&
+                        (((DataBuff.Data[0] & 0xFF) << 8) | (DataBuff.Data[1] >> 8)) != 0xCDF0)
+                    {
+                        Msg = ErrorFun;
+                    }
+                    else if(DataBuff.Data[1] & 0xFF | (DataBuff.Data[2] >> 8) != (DataBuff.PackageCnt + 1))
+                    {
+                        Msg = ErrorPack;
+                    }
+                    else if((Uint32)(DataBuff.Data[2] & 0xFF) << 16 | DataBuff.Data[3] == 0x0000001) //需要修改为地址范围
+                    {
+                        Msg = ErrorAddr;
+                    }
+                    else
+                    {
+                        Msg = ReceptOK;
+                    }
+                    
+                    SendString(&Msg, 1);
+                    if(Msg != ReceptOK)
+                    {
+                        InitValue();
+                    }
+                }
+                else if(DataBuff.DataCnt == 5)
+                {
+                    DataBuff.TargeCnt = DataBuff.Data[DataBuff.DataCnt] + 6;
+                }
             }
         }
         InitValue();
