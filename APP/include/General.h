@@ -10,6 +10,7 @@ class ClassGeneral
 {
     public:
     Uint16 CRC16Modbus(Uint16 *Addr, Uint16 Num);
+    Uint16 CheckSum_MINI(Uint16 *Data, int Length);
 
 };
 

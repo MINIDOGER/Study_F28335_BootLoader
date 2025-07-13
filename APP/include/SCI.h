@@ -13,10 +13,12 @@
 #include "Timer.h"
 
 /************************************************************************
-|0      |1-2    |3-4    |5-7    |8-9    |9-521  |522    |523    |
-|0x01   |0xCDfun|package|addr   |len    |data   |add    |end    |
-8:522;(1+2+2+3+2+512+2=524)
-16:262;
+max
+|0      |1      |2      |3-4    |5      |6-261  |262    |
+|0-1    |2-3    |4-5    |6-9    |10-11  |12-523 |524-525|
+|0x01   |0xCDfun|package|addr   |len    |data   |add    |
+8:526;
+16:263;
 ************************************************************************/
 
 #define ErrorDevice         0xe1
@@ -24,7 +26,11 @@
 #define ErrorAddr           0xea
 #define ErrorPack           0xe0
 #define ErrorCheck          0xec
+#define ErrorEnd            0xee
 #define ReceptOK            0xcd
+
+#define AddrMin             0x00008400
+#define AddrMax             0x00008700
 
 // 声明串口接收中断服务函数
 interrupt void SCIARX_ISR(void);
@@ -39,10 +45,11 @@ public:
     // 数据缓冲区结构体
     struct
     {
-        Uint16 Data[262];   // 数据数组
+        Uint16 Data[263];   // 数据数组
         Uint16 DataCnt;  // 数据计数
         Uint8 IsLowByte;
         Uint16 TargeCnt;
+        Uint16 PackageTarge;
         Uint16 PackageCnt;
     } DataBuff;
 

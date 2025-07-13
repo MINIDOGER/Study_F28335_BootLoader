@@ -44,6 +44,8 @@ void ClassSCI::InitValue(void)
     DataBuff.DataCnt = 0;
     DataBuff.IsLowByte = 0;
     DataBuff.TargeCnt = 0x06;
+    DataBuff.PackageTarge = 0;
+    DataBuff.PackageCnt = 1;
     UpData = 0;
     Msg = 0;
     NumFFRX = 0;
@@ -110,38 +112,72 @@ void ClassSCI::UpDataTask()
                 NumFFRX = 0;
                 if(DataBuff.DataCnt == DataBuff.TargeCnt)
                 {
-                    if(DataBuff.Data[0] >> 8 != 0x01)
+                    if(DataBuff.Data[0] != 0x01)
                     {
                         Msg = ErrorDevice;
                     }
-                    else if((((DataBuff.Data[0] & 0xFF) << 8) | (DataBuff.Data[1] >> 8)) != 0xCDFF &&
-                        (((DataBuff.Data[0] & 0xFF) << 8) | (DataBuff.Data[1] >> 8)) != 0xCDDA &&
-                        (((DataBuff.Data[0] & 0xFF) << 8) | (DataBuff.Data[1] >> 8)) != 0xCDF0)
+                    else if(DataBuff.Data[1] != 0xCDFF && DataBuff.Data[1] != 0xCDDA && DataBuff.Data[1] != 0xCDF0)
                     {
                         Msg = ErrorFun;
                     }
-                    else if(DataBuff.Data[1] & 0xFF | (DataBuff.Data[2] >> 8) != (DataBuff.PackageCnt + 1))
+
+                    switch(DataBuff.Data[1])
                     {
-                        Msg = ErrorPack;
-                    }
-                    else if((Uint32)(DataBuff.Data[2] & 0xFF) << 16 | DataBuff.Data[3] == 0x0000001) //需要修改为地址范围
-                    {
-                        Msg = ErrorAddr;
-                    }
-                    else
-                    {
-                        Msg = ReceptOK;
+                        case 0xCDFF://结束命令
+                        InitValue();
+                        break;
+
+                        case 0xCDF0://开始命令
+                        DataBuff.PackageTarge = DataBuff.Data[2];
+                        DataBuff.PackageCnt = 1;
+                        memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
+                        DataBuff.DataCnt = 0;
+                        DataBuff.IsLowByte = 0;
+                        DataBuff.TargeCnt = 0x06;
+                        Msg = 0;
+                        break;
+
+                        case 0xCDDA://数据接收
+                        if(DataBuff.Data[2] != DataBuff.PackageCnt)
+                        {
+                            Msg = ErrorPack;
+                        }
+                        else if(((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4] < AddrMin || (((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4]) + (Uint32)DataBuff.Data[5] > AddrMax) //需要修改为地址范围
+                        {
+                            Msg = ErrorAddr;
+                        }
+                        else if(General.CheckSum_MINI(&DataBuff.Data[6], DataBuff.Data[5]) != DataBuff.Data[DataBuff.TargeCnt - 1])
+                        {
+                            Msg = ErrorCheck;
+                        }
+                        else
+                        {
+                            Msg = ReceptOK;
+                        }
+                        break;
+
+                        default:
+                        Msg = ErrorFun;
+                        break;
+                    
                     }
                     
                     SendString(&Msg, 1);
-                    if(Msg != ReceptOK)
+                    if(DataBuff.Data[1] == 0xCDDA && Msg == ReceptOK)
                     {
-                        InitValue();
+                        DataBuff.PackageCnt++;
                     }
+
+                    memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
+                    DataBuff.DataCnt = 0;
+                    DataBuff.IsLowByte = 0;
+                    DataBuff.TargeCnt = 0x06;
+                    Msg = 0;
                 }
-                else if(DataBuff.DataCnt == 5)
+                else if(DataBuff.DataCnt == 6)
                 {
-                    DataBuff.TargeCnt = DataBuff.Data[DataBuff.DataCnt] + 6;
+                    // 总元素数 = 包头(6) + 数据部分((len+1)/2) + 校验和(1)
+                    DataBuff.TargeCnt = 7 + (DataBuff.Data[5] + 1) / 2;
                 }
             }
         }
