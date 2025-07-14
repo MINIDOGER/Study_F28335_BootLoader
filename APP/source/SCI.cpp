@@ -43,7 +43,7 @@ void ClassSCI::InitValue(void)
     memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
     DataBuff.DataCnt = 0;
     DataBuff.IsLowByte = 0;
-    DataBuff.TargeCnt = 0x06;
+    DataBuff.TargeCnt = 0x0107;
     DataBuff.PackageTarge = 0;
     DataBuff.PackageCnt = 1;
     UpData = 0;
@@ -133,7 +133,7 @@ void ClassSCI::UpDataTask()
                         memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
                         DataBuff.DataCnt = 0;
                         DataBuff.IsLowByte = 0;
-                        DataBuff.TargeCnt = 0x06;
+                        DataBuff.TargeCnt = 0x0107;
                         Msg = 0;
                         break;
 
@@ -146,7 +146,7 @@ void ClassSCI::UpDataTask()
                         {
                             Msg = ErrorAddr;
                         }
-                        else if(General.CheckSum_MINI(&DataBuff.Data[6], DataBuff.Data[5]) != DataBuff.Data[DataBuff.TargeCnt - 1])
+                        else if(General.CheckSum_MINI(&DataBuff.Data[0], DataBuff.TargeCnt - 1) != DataBuff.Data[DataBuff.TargeCnt - 1])
                         {
                             Msg = ErrorCheck;
                         }
@@ -171,7 +171,7 @@ void ClassSCI::UpDataTask()
                     memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
                     DataBuff.DataCnt = 0;
                     DataBuff.IsLowByte = 0;
-                    DataBuff.TargeCnt = 0x06;
+                    DataBuff.TargeCnt = 0x0107;
                     Msg = 0;
                 }
                 else if(DataBuff.DataCnt == 6)
