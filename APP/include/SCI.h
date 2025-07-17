@@ -21,16 +21,22 @@ max
 16:263;
 ************************************************************************/
 
-#define ErrorDevice         0xe1
-#define ErrorFun            0xef
-#define ErrorAddr           0xea
-#define ErrorPack           0xe0
-#define ErrorCheck          0xec
-#define ErrorEnd            0xee
-#define ReceptOK            0xcd
+/**
+ * @brief 错误码定义
+ */
+#define ErrorDevice         0xe1    // 设备错误
+#define ErrorFun            0xef    // 功能错误
+#define ErrorAddr           0xea    // 地址错误
+#define ErrorPack           0xe0    // 数据包错误
+#define ErrorCheck          0xec    // 校验错误
+#define ErrorEnd            0xee    // 错误结束
+#define ReceptOK            0xcd    // 接收成功
 
-#define AddrMin             0x00008400
-#define AddrMax             0x00008700
+/**
+ * @brief 地址范围定义
+ */
+#define AddrMin             0x00008400  // 最小有效地址
+#define AddrMax             0x00008700  // 最大有效地址
 
 // 声明串口接收中断服务函数
 interrupt void SCIARX_ISR(void);
@@ -45,8 +51,8 @@ public:
     // 数据缓冲区结构体
     struct
     {
-        Uint16 Data[263];   // 数据数组
-        Uint16 DataCnt;  // 数据计数
+        Uint16 Data[263]; // 数据数组
+        Uint16 DataCnt; // 数据计数
         Uint8 IsLowByte;
         Uint16 TargeCnt;
         Uint16 PackageTarge;

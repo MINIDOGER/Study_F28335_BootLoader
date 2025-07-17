@@ -51,40 +51,52 @@ void Flash_Test(void)
 	SCI.SendString(&SCI.Msg, 1);
 }
 
+/**
+ * @brief 系统主函数
+ *
+ * @param 无
+ * @return 无
+ */
 void main(void)
 {
-	InitSysCtrl();
-	InitGpio();
+    // 系统基础初始化
+    InitSysCtrl();
+    InitGpio();
 
-	InitPieCtrl();
-	IER = 0x0000;
-	IFR = 0x0000;
-	InitPieVectTable();
+    // PIE控制模块初始化
+    InitPieCtrl();
+    IER = 0x0000;
+    IFR = 0x0000;
+    InitPieVectTable();
 
-	// InitFlash();
+    // InitFlash();
 
-	InitDebugLED();
-	SCI.InitSCI();
-	SCI.Msg = 0x11;
-	SCI.SendString(&SCI.Msg, 1);
-	Timer.InitTimer(150, 100000);
+    // 外设初始化
+    InitDebugLED();
+    SCI.InitSCI();
+    SCI.Msg = 0x11;
+    SCI.SendString(&SCI.Msg, 1);
+    Timer.InitTimer(150, 100000);
 
-	Flash_Test();
+    Flash_Test();
 
-	while(1)
-	{
-		Timer.FlagTimer();
-		if(Timer.TimeBaseFlag.bit.Timer1s == 1)
-		{
-			DEBUG_LED_Toggle();
-			Timer.TimeCnt++;
-		}
+    // 主循环
+    while(1)
+    {
+        Timer.FlagTimer();
+        // 每秒翻转LED
+        if(Timer.TimeBaseFlag.bit.Timer1s == 1)
+        {
+            DEBUG_LED_Toggle();
+            Timer.TimeCnt++;
+        }
 
-		SCI.UpDataTask();
+        // 串口数据上传任务
+        SCI.UpDataTask();
 
-		if(Timer.TimeCnt == 0x0A && SCI.UpData == 0)
-		{
+        if(Timer.TimeCnt == 0x0A && SCI.UpData == 0)
+        {
 
-		}
-	}
+        }
+    }
 }
