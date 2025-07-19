@@ -26,29 +26,29 @@ void Flash_Test(void)
 	Status = Flash_Erase(SECTORB,&EraseStatus);
 	if(Status != STATUS_SUCCESS)
 	{
-		SCI.Msg = 0x01;
-		SCI.SendString(&SCI.Msg, 1);
+		SCI.Msg[0] = 0x01;
+		SCI.SendString(SCI.Msg, 1);
 		return;
 	}
 
 	Status = Flash_Program(Flash_ptr,(Uint16 *)Buffer,Length,&ProgStatus);
 	if(Status != STATUS_SUCCESS)
 	{
-		SCI.Msg = 0x02;
-		SCI.SendString(&SCI.Msg, 1);
+		SCI.Msg[0] = 0x02;
+		SCI.SendString(SCI.Msg, 1);
 		return;
 	}
 
 	Status = Flash_Verify(Flash_ptr,(Uint16 *)Buffer,Length,&VerifyStatus);
 	if(Status != STATUS_SUCCESS)
 	{
-		SCI.Msg = 0x03;
-		SCI.SendString(&SCI.Msg, 1);
+		SCI.Msg[0] = 0x03;
+		SCI.SendString(SCI.Msg, 1);
 		return;
 	}
 
-	SCI.Msg = (Uint8)Status;
-	SCI.SendString(&SCI.Msg, 1);
+	SCI.Msg[0] = (Uint8)Status;
+	SCI.SendString(SCI.Msg, 1);
 }
 
 /**
@@ -69,16 +69,18 @@ void main(void)
     IFR = 0x0000;
     InitPieVectTable();
 
-    // InitFlash();
+	MemCopy(&RamfuncsLoadStart, &RamfuncsLoadEnd, &RamfuncsRunStart);
+	MemCopy(&Flash28_API_LoadStart, &Flash28_API_LoadEnd, &Flash28_API_RunStart);
+	InitFlash();
 
     // 外设初始化
     InitDebugLED();
     SCI.InitSCI();
-    SCI.Msg = 0x11;
-    SCI.SendString(&SCI.Msg, 1);
+    SCI.Msg[0] = 0x11;
+    SCI.SendString(SCI.Msg, 1);
     Timer.InitTimer(150, 100000);
 
-    Flash_Test();
+    // Flash_Test();
 
     // 主循环
     while(1)

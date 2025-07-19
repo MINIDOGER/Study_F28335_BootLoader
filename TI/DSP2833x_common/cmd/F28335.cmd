@@ -81,12 +81,13 @@ PAGE 0:    /* Program Memory */
    RAML3       : origin = 0x00B000, length = 0x001000     /* on-chip RAM block L3 */
    ZONE6       : origin = 0x0100000, length = 0x100000    /* XINTF zone 6 */ 
    ZONE7A      : origin = 0x0200000, length = 0x00FC00    /* XINTF zone 7 - program space */ 
-   FLASHH      : origin = 0x300000, length = 0x008000     /* on-chip FLASH */
+   // FLASHH      : origin = 0x300000, length = 0x008000     /* on-chip FLASH */
    FLASHG      : origin = 0x308000, length = 0x008000     /* on-chip FLASH */
    FLASHF      : origin = 0x310000, length = 0x008000     /* on-chip FLASH */
    FLASHE      : origin = 0x318000, length = 0x008000     /* on-chip FLASH */
    FLASHD      : origin = 0x320000, length = 0x008000     /* on-chip FLASH */
    FLASHC      : origin = 0x328000, length = 0x008000     /* on-chip FLASH */
+   FLASHB      : origin = 0x330000, length = 0x008000     /* on-chip FLASH */
    FLASHA      : origin = 0x338000, length = 0x007F80     /* on-chip FLASH */
    CSM_RSVD    : origin = 0x33FF80, length = 0x000076     /* Part of FLASHA.  Program with all 0x0000 when CSM is in use. */
    BEGIN       : origin = 0x33FFF6, length = 0x000002     /* Part of FLASHA.  Used for "boot to Flash" bootloader mode. */
@@ -113,7 +114,8 @@ PAGE 1 :   /* Data Memory */
    RAML6       : origin = 0x00E000, length = 0x001000     /* on-chip RAM block L1 */
    RAML7       : origin = 0x00F000, length = 0x001000     /* on-chip RAM block L1 */
    ZONE7B      : origin = 0x20FC00, length = 0x000400     /* XINTF zone 7 - data space */
-   FLASHB      : origin = 0x330000, length = 0x008000     /* on-chip FLASH */
+   // FLASHB      : origin = 0x330000, length = 0x008000     /* on-chip FLASH */
+   FLASHH      : origin = 0x300000, length = 0x008000     /* on-chip FLASH */
 }
 
 /* Allocate sections to memory blocks.
@@ -125,13 +127,28 @@ PAGE 1 :   /* Data Memory */
  
 SECTIONS
 {
+   /* The Flash API functions can be grouped together as shown below.
+   The defined symbols _Flash28_API_LoadStart, _Flash28_API_LoadEnd
+   and _Flash28_API_RunStart are used to copy the API functions out
+   of flash memory and into SARAM */
+
+   Flash28_API:
+   {
+        -lFlash28335_API_V210.lib(.econst) 
+        -lFlash28335_API_V210.lib(.text)
+   }                   LOAD = FLASHA, 
+                       RUN = RAML0,  
+                       LOAD_START(_Flash28_API_LoadStart),
+                       LOAD_END(_Flash28_API_LoadEnd),
+                       RUN_START(_Flash28_API_RunStart),
+                       PAGE = 0
  
    /* Allocate program areas: */
    .cinit              : > FLASHA      PAGE = 0
    .pinit              : > FLASHA,     PAGE = 0
    .text               : > FLASHA      PAGE = 0
    codestart           : > BEGIN       PAGE = 0
-   ramfuncs            : LOAD = FLASHD, 
+   ramfuncs            : LOAD = FLASHA, 
                          RUN = RAML0, 
                          LOAD_START(_RamfuncsLoadStart),
                          LOAD_END(_RamfuncsLoadEnd),

@@ -88,7 +88,8 @@ void ClassSCI::InitValue(void)
     // 清零更新标志
     UpData = 0;
     // 清零消息标志
-    Msg = 0;
+    memset(Msg, 0, sizeof(Msg));
+    MsgLen = 0;
     // 清零特殊字符计数器
     NumFFRX = 0;
 }
@@ -159,10 +160,10 @@ void ClassSCI::UpDataTask()
     if(UpData == 1)
     {
         Uint16 temp = 0;
-        Msg = 0xCD;
-        SendString(&Msg, 1);
+        Msg[0] = 0xCD;
+        SendString(Msg, 1);
         Timer.TimeCnt = 0;
-        while(Timer.TimeCnt < 0x14)
+        while(1/*Timer.TimeCnt < 0x14*/)
         {
             Timer.FlagTimer();
             if(Timer.TimeBaseFlag.bit.Timer500ms == 1)
@@ -202,11 +203,11 @@ void ClassSCI::UpDataTask()
                      */
                     if(DataBuff.Data[0] != 0x01)
                     {
-                        Msg = ErrorDevice;
+                        Msg[0] = ErrorDevice;
                     }
                     else if(DataBuff.Data[1] != 0xCDFF && DataBuff.Data[1] != 0xCDDA && DataBuff.Data[1] != 0xCDF0)
                     {
-                        Msg = ErrorFun;
+                        Msg[0] = ErrorFun;
                     }
 
                     /**
@@ -218,46 +219,57 @@ void ClassSCI::UpDataTask()
                     switch(DataBuff.Data[1])
                     {
                         case 0xCDFF://结束命令
-                        InitValue();
+                        if(DataBuff.TargeCnt == DataBuff.PackageCnt)
+                        {
+                            Msg[0] = ReceptOK;
+                            MsgLen = 1;
+                        }
+                        else
+                        {
+                            Msg[0] = ErrorPack;
+                            MsgLen = 1;
+                        }
                         break;
 
                         case 0xCDF0://开始命令
                         DataBuff.PackageTarge = DataBuff.Data[2];
                         DataBuff.PackageCnt = 1;
-                        memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
-                        DataBuff.DataCnt = 0;
-                        DataBuff.IsLowByte = 0;
-                        DataBuff.TargeCnt = 0x0107;
-                        Msg = 0;
+                        Msg[0] = ReceptOK;
+                        MsgLen = 1;
                         break;
 
                         case 0xCDDA://数据接收
                         if(DataBuff.Data[2] != DataBuff.PackageCnt)
                         {
-                            Msg = ErrorPack;
+                            Msg[0] = ErrorPack;
+                            MsgLen = 1;
                         }
                         else if(((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4] < AddrMin || (((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4]) + (Uint32)DataBuff.Data[5] > AddrMax) //需要修改为地址范围
                         {
-                            Msg = ErrorAddr;
+                            Msg[0] = ErrorAddr;
+                            MsgLen = 1;
                         }
                         else if(General.CheckSum_MINI(&DataBuff.Data[0], DataBuff.TargeCnt - 1) != DataBuff.Data[DataBuff.TargeCnt - 1])
                         {
-                            Msg = ErrorCheck;
+                            Msg[0] = ErrorCheck;
+                            MsgLen = 1;
                         }
                         else
                         {
-                            Msg = ReceptOK;
+                            Msg[0] = ReceptOK;
+                            MsgLen = 1;
                         }
                         break;
 
                         default:
-                        Msg = ErrorFun;
+                        Msg[0] = ErrorEnd;
+                        MsgLen = 1;
                         break;
                     
                     }
                     
-                    SendString(&Msg, 1);
-                    if(DataBuff.Data[1] == 0xCDDA && Msg == ReceptOK)
+                    SendString(Msg, MsgLen);
+                    if(DataBuff.Data[1] == 0xCDDA && Msg[0] == ReceptOK)
                     {
                         DataBuff.PackageCnt++;
                     }
@@ -269,7 +281,8 @@ void ClassSCI::UpDataTask()
                     DataBuff.DataCnt = 0;
                     DataBuff.IsLowByte = 0;
                     DataBuff.TargeCnt = 0x0107;
-                    Msg = 0;
+                    memset(Msg, 0, sizeof(Msg));
+                    MsgLen = 0;
                 }
                 else if(DataBuff.DataCnt == 6)
                 {

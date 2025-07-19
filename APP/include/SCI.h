@@ -60,14 +60,15 @@ public:
     } DataBuff;
 
     Uint8 UpData;  // 更新标志
-    Uint8 Msg;
+    Uint8 Msg[8];
+    Uint16 MsgLen;
     Uint8 NumFFRX;
 
     // 公共成员函数
     void InitSCI(void);                     // 初始化SCI
     void InitValue(void);
     void SendString(Uint8* Data, Uint16 Len);  // 发送字符串
-    void UpDataTask();
+    void UpDataTask()__attribute__((section("ramfuncs")));
 };
 
 extern ClassSCI SCI;  // 声明外部类实例
