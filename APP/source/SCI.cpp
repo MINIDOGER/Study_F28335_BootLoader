@@ -234,8 +234,16 @@ void ClassSCI::UpDataTask()
                         case 0xCDF0://开始命令
                         DataBuff.PackageTarge = DataBuff.Data[2];
                         DataBuff.PackageCnt = 1;
-                        Msg[0] = ReceptOK;
-                        MsgLen = 1;
+                        if(BootFlash.MyFlashErase() == 0)
+                        {
+                            Msg[0] = ReceptOK;
+                            MsgLen = 1;
+                        }
+                        else
+                        {
+                            Msg[0] = ErrorFlash;
+                            MsgLen = 1;
+                        }
                         break;
 
                         case 0xCDDA://数据接收
@@ -268,11 +276,20 @@ void ClassSCI::UpDataTask()
                     
                     }
                     
-                    SendString(Msg, MsgLen);
                     if(DataBuff.Data[1] == 0xCDDA && Msg[0] == ReceptOK)
                     {
-                        DataBuff.PackageCnt++;
+                        if(BootFlash.MyFlashCode(DataBuff.Data) == 0)
+                        {
+                            DataBuff.PackageCnt++;
+                        }
+                        else
+                        {
+                            Msg[0] = ErrorCode;
+                            MsgLen = 1;
+                        }
                     }
+                    
+                    SendString(Msg, MsgLen);
 
                     /**
                      * 清空数据缓冲区，并重新设置目标数据长度。

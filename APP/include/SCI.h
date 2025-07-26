@@ -5,12 +5,13 @@
 #include "DSP2833x_Examples.h"
 
 #include <string.h>
-#include "Flash2833x_API_Config.h"
-#include "Flash2833x_API_Library.h"
+// #include "Flash2833x_API_Config.h"
+// #include "Flash2833x_API_Library.h"
 
 #include "Debug_LED.h"
 #include "General.h"
 #include "Timer.h"
+#include "FlashOperation.h"
 
 /************************************************************************
 max
@@ -26,6 +27,8 @@ max
  */
 #define ErrorDevice         0xe1    // 设备错误
 #define ErrorFun            0xef    // 功能错误
+#define ErrorFlash          0xfa    // flash错误
+#define ErrorCode           0xff    // flash错误
 #define ErrorAddr           0xea    // 地址错误
 #define ErrorPack           0xe0    // 数据包错误
 #define ErrorCheck          0xec    // 校验错误
@@ -35,8 +38,8 @@ max
 /**
  * @brief 地址范围定义
  */
-#define AddrMin             0x00008400  // 最小有效地址
-#define AddrMax             0x00008700  // 最大有效地址
+#define AddrMin             0x00328000  // 最小有效地址SectorCStart
+#define AddrMax             0x00317FFF  // 最大有效地址SectorFEnd
 
 // 声明串口接收中断服务函数
 interrupt void SCIARX_ISR(void);
@@ -68,7 +71,7 @@ public:
     void InitSCI(void);                     // 初始化SCI
     void InitValue(void);
     void SendString(Uint8* Data, Uint16 Len);  // 发送字符串
-    void UpDataTask()__attribute__((section("ramfuncs")));
+    void UpDataTask();
 };
 
 extern ClassSCI SCI;  // 声明外部类实例
