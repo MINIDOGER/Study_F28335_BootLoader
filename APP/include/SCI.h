@@ -38,8 +38,8 @@ max
 /**
  * @brief 地址范围定义
  */
-#define AddrMin             0x00328000  // 最小有效地址SectorCStart
-#define AddrMax             0x00317FFF  // 最大有效地址SectorFEnd
+#define AddrMin             0x00310000  // 最小有效地址SectorFStart
+#define AddrMax             0x0032FFFF  // 最大有效地址SectorCEnd
 
 // 声明串口接收中断服务函数
 interrupt void SCIARX_ISR(void);

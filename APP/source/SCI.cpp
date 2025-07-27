@@ -163,7 +163,7 @@ void ClassSCI::UpDataTask()
         Msg[0] = 0xCD;
         SendString(Msg, 1);
         Timer.TimeCnt = 0;
-        while(1/*Timer.TimeCnt < 0x14*/)
+        while(UpData/*Timer.TimeCnt < 0x14*/)
         {
             Timer.FlagTimer();
             if(Timer.TimeBaseFlag.bit.Timer500ms == 1)
@@ -197,6 +197,8 @@ void ClassSCI::UpDataTask()
                 NumFFRX = 0;
                 if(DataBuff.DataCnt == DataBuff.TargeCnt)
                 {
+                    Msg[0] = ReceptOK;
+                    MsgLen = 1;
                     /**
                      * 检查数据包的第一个字节是否为预期设备标识符，
                      * 第二个字节是否为有效功能码。
@@ -209,72 +211,64 @@ void ClassSCI::UpDataTask()
                     {
                         Msg[0] = ErrorFun;
                     }
-
-                    /**
-                     * 根据接收到的不同命令码执行不同的操作：
-                     * - 0xCDFF: 结束命令，初始化变量
-                     * - 0xCDF0: 开始命令，设置目标包数量并重置数据缓冲区
-                     * - 0xCDDA: 数据接收，检查包序号、地址范围和校验和
-                     */
-                    switch(DataBuff.Data[1])
+                    else if(General.CheckSum_MINI(&DataBuff.Data[0], DataBuff.TargeCnt - 1) != DataBuff.Data[DataBuff.TargeCnt - 1])
                     {
-                        case 0xCDFF://结束命令
-                        if(DataBuff.TargeCnt == DataBuff.PackageCnt)
-                        {
-                            Msg[0] = ReceptOK;
-                            MsgLen = 1;
-                        }
-                        else
-                        {
-                            Msg[0] = ErrorPack;
-                            MsgLen = 1;
-                        }
-                        break;
-
-                        case 0xCDF0://开始命令
-                        DataBuff.PackageTarge = DataBuff.Data[2];
-                        DataBuff.PackageCnt = 1;
-                        if(BootFlash.MyFlashErase() == 0)
-                        {
-                            Msg[0] = ReceptOK;
-                            MsgLen = 1;
-                        }
-                        else
-                        {
-                            Msg[0] = ErrorFlash;
-                            MsgLen = 1;
-                        }
-                        break;
-
-                        case 0xCDDA://数据接收
-                        if(DataBuff.Data[2] != DataBuff.PackageCnt)
-                        {
-                            Msg[0] = ErrorPack;
-                            MsgLen = 1;
-                        }
-                        else if(((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4] < AddrMin || (((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4]) + (Uint32)DataBuff.Data[5] > AddrMax) //需要修改为地址范围
-                        {
-                            Msg[0] = ErrorAddr;
-                            MsgLen = 1;
-                        }
-                        else if(General.CheckSum_MINI(&DataBuff.Data[0], DataBuff.TargeCnt - 1) != DataBuff.Data[DataBuff.TargeCnt - 1])
-                        {
-                            Msg[0] = ErrorCheck;
-                            MsgLen = 1;
-                        }
-                        else
-                        {
-                            Msg[0] = ReceptOK;
-                            MsgLen = 1;
-                        }
-                        break;
-
-                        default:
-                        Msg[0] = ErrorEnd;
-                        MsgLen = 1;
-                        break;
-                    
+                        Msg[0] = ErrorCheck;
                     }
+                    else
+                    {
+                        /**
+                        * 根据接收到的不同命令码执行不同的操作：
+                        * - 0xCDFF: 结束命令，初始化变量
+                        * - 0xCDF0: 开始命令，设置目标包数量并重置数据缓冲区
+                        * - 0xCDDA: 数据接收，检查包序号、地址范围和校验和
+                        */
+                        switch(DataBuff.Data[1])
+                        {
+                            case 0xCDFF://结束命令
+                            if(DataBuff.PackageTarge == DataBuff.PackageCnt)
+                            {
+                                Msg[0] = ReceptOK;
+                                UpData = 0;
+                            }
+                            else
+                            {
+                                Msg[0] = ErrorPack;
+                            }
+                            break;
+
+                            case 0xCDF0://开始命令
+                            DataBuff.PackageTarge = DataBuff.Data[2];
+                            DataBuff.PackageCnt = 0;
+                            if(BootFlash.MyFlashErase() == 0)
+                            {
+                                Msg[0] = ReceptOK;
+                            }
+                            else
+                            {
+                                Msg[0] = ErrorFlash;
+                            }
+                            break;
+
+                            case 0xCDDA://数据接收
+                            if(DataBuff.Data[2] != DataBuff.PackageCnt)
+                            {
+                                Msg[0] = ErrorPack;
+                            }
+                            else if(((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4] < AddrMin || (((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4]) + (Uint32)DataBuff.Data[5] > AddrMax) //需要修改为地址范围
+                            {
+                                Msg[0] = ErrorAddr;
+                            }
+                            break;
+
+                            default:
+                            Msg[0] = ErrorEnd;
+                            break;
+                        
+                        }
+                    }
+
+
                     
                     if(DataBuff.Data[1] == 0xCDDA && Msg[0] == ReceptOK)
                     {
@@ -285,7 +279,6 @@ void ClassSCI::UpDataTask()
                         else
                         {
                             Msg[0] = ErrorCode;
-                            MsgLen = 1;
                         }
                     }
                     
