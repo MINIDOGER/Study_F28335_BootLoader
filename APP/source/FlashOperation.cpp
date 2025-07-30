@@ -3,7 +3,6 @@
 ClassFlash BootFlash;
 
 #pragma CODE_SECTION("ramfuncs")
-
 void ClassFlash::Flash_Test(void)
 {
     Uint16 Status = 0;
@@ -47,6 +46,7 @@ void ClassFlash::Flash_Test(void)
 	SCI.SendString(SCI.Msg, 1);
 }
 
+#pragma CODE_SECTION("ramfuncs")
 Uint16 ClassFlash::MyFlashErase(void)
 {
     Uint16 Status = 0;
@@ -57,7 +57,7 @@ Uint16 ClassFlash::MyFlashErase(void)
 	Flash_CallbackPtr = NULL;
 	EDIS;
 
-    Status = Flash_Erase(SECTORC|SECTORD|SECTORE|SECTORF,&EraseStatus);
+    Status = Flash_Erase(SECTORC,&EraseStatus);
 	if(Status != STATUS_SUCCESS)
 	{
 		SCI.Msg[0] = 0x01;
@@ -65,10 +65,10 @@ Uint16 ClassFlash::MyFlashErase(void)
 		return Status;
 	}
 
-    Status = 0x01;
     return Status;
 }
 
+#pragma CODE_SECTION("ramfuncs")
 Uint16 ClassFlash::MyFlashCode(Uint16* Code)
 {
     Uint16 Status = 0;
@@ -99,6 +99,5 @@ Uint16 ClassFlash::MyFlashCode(Uint16* Code)
 		return Status;
 	}
 
-    Status = 0x01;
     return Status;
 }

@@ -13,8 +13,8 @@ void ClassSCI::InitSCI(void)
     InitValue();
 
     // 计算并设置SCI的波特率参数
-    Uint16 temp;
-    temp = 37500000/(8*115200)-1;
+    Uint16 DataTemp;
+    DataTemp = 37500000/(8*115200)-1;
     
     // 初始化SCI的GPIO引脚
     InitSciGpio();
@@ -47,8 +47,8 @@ void ClassSCI::InitSCI(void)
     SciaRegs.SCICTL2.bit.RXBKINTENA = 1;
 
     // 设置SCI的波特率寄存器（高8位和低8位）
-    SciaRegs.SCIHBAUD = temp >> 8;
-    SciaRegs.SCILBAUD = temp & 0xFF;
+    SciaRegs.SCIHBAUD = DataTemp >> 8;
+    SciaRegs.SCILBAUD = DataTemp & 0xFF;
 
     // 重新启用SCI模块的发送和接收功能
     SciaRegs.SCICTL1.all = 0x0023;
@@ -159,7 +159,8 @@ void ClassSCI::UpDataTask()
 {
     if(UpData == 1)
     {
-        Uint16 temp = 0;
+        Uint16 DataTemp = 0;
+        Uint32 AddrTemp = 0;
         Msg[0] = 0xCD;
         SendString(Msg, 1);
         Timer.TimeCnt = 0;
@@ -184,121 +185,124 @@ void ClassSCI::UpDataTask()
                 {
                     if(DataBuff.IsLowByte)
                     {
-                        DataBuff.Data[DataBuff.DataCnt] = SciaRegs.SCIRXBUF.bit.RXDT | temp << 8;
+                        DataBuff.Data[DataBuff.DataCnt] = SciaRegs.SCIRXBUF.bit.RXDT | DataTemp << 8;
                         DataBuff.IsLowByte = 0;
                         DataBuff.DataCnt++;
                     }
                     else
                     {
-                        temp = SciaRegs.SCIRXBUF.bit.RXDT;
+                        DataTemp = SciaRegs.SCIRXBUF.bit.RXDT;
                         DataBuff.IsLowByte = 1;
                     }
                 }
                 NumFFRX = 0;
-                if(DataBuff.DataCnt == DataBuff.TargeCnt)
-                {
-                    Msg[0] = ReceptOK;
-                    MsgLen = 1;
-                    /**
-                     * 检查数据包的第一个字节是否为预期设备标识符，
-                     * 第二个字节是否为有效功能码。
-                     */
-                    if(DataBuff.Data[0] != 0x01)
-                    {
-                        Msg[0] = ErrorDevice;
-                    }
-                    else if(DataBuff.Data[1] != 0xCDFF && DataBuff.Data[1] != 0xCDDA && DataBuff.Data[1] != 0xCDF0)
-                    {
-                        Msg[0] = ErrorFun;
-                    }
-                    else if(General.CheckSum_MINI(&DataBuff.Data[0], DataBuff.TargeCnt - 1) != DataBuff.Data[DataBuff.TargeCnt - 1])
-                    {
-                        Msg[0] = ErrorCheck;
-                    }
-                    else
-                    {
-                        /**
-                        * 根据接收到的不同命令码执行不同的操作：
-                        * - 0xCDFF: 结束命令，初始化变量
-                        * - 0xCDF0: 开始命令，设置目标包数量并重置数据缓冲区
-                        * - 0xCDDA: 数据接收，检查包序号、地址范围和校验和
-                        */
-                        switch(DataBuff.Data[1])
-                        {
-                            case 0xCDFF://结束命令
-                            if(DataBuff.PackageTarge == DataBuff.PackageCnt)
-                            {
-                                Msg[0] = ReceptOK;
-                                UpData = 0;
-                            }
-                            else
-                            {
-                                Msg[0] = ErrorPack;
-                            }
-                            break;
 
-                            case 0xCDF0://开始命令
-                            DataBuff.PackageTarge = DataBuff.Data[2];
-                            DataBuff.PackageCnt = 0;
-                            if(BootFlash.MyFlashErase() == 0)
-                            {
-                                Msg[0] = ReceptOK;
-                            }
-                            else
-                            {
-                                Msg[0] = ErrorFlash;
-                            }
-                            break;
-
-                            case 0xCDDA://数据接收
-                            if(DataBuff.Data[2] != DataBuff.PackageCnt)
-                            {
-                                Msg[0] = ErrorPack;
-                            }
-                            else if(((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4] < AddrMin || (((Uint32)DataBuff.Data[3] << 16) | DataBuff.Data[4]) + (Uint32)DataBuff.Data[5] > AddrMax) //需要修改为地址范围
-                            {
-                                Msg[0] = ErrorAddr;
-                            }
-                            break;
-
-                            default:
-                            Msg[0] = ErrorEnd;
-                            break;
-                        
-                        }
-                    }
-
-
-                    
-                    if(DataBuff.Data[1] == 0xCDDA && Msg[0] == ReceptOK)
-                    {
-                        if(BootFlash.MyFlashCode(DataBuff.Data) == 0)
-                        {
-                            DataBuff.PackageCnt++;
-                        }
-                        else
-                        {
-                            Msg[0] = ErrorCode;
-                        }
-                    }
-                    
-                    SendString(Msg, MsgLen);
-
-                    /**
-                     * 清空数据缓冲区，并重新设置目标数据长度。
-                     */
-                    memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
-                    DataBuff.DataCnt = 0;
-                    DataBuff.IsLowByte = 0;
-                    DataBuff.TargeCnt = 0x0107;
-                    memset(Msg, 0, sizeof(Msg));
-                    MsgLen = 0;
-                }
-                else if(DataBuff.DataCnt == 6)
+                if(DataBuff.DataCnt == 6 && DataBuff.IsLowByte == 0)
                 {
                     // 总元素数 = 包头(6) + 数据部分((len+1)/2) + 校验和(1)
                     DataBuff.TargeCnt = 7 + (DataBuff.Data[5] + 1) / 2;
                 }
+            }
+
+            if(DataBuff.DataCnt >= DataBuff.TargeCnt)
+            {
+                Msg[0] = ReceptOK;
+                MsgLen = 1;
+                /**
+                    * 检查数据包的第一个字节是否为预期设备标识符，
+                    * 第二个字节是否为有效功能码。
+                    */
+                if(DataBuff.Data[0] != 0x01)
+                {
+                    Msg[0] = ErrorDevice;
+                }
+                else if(DataBuff.Data[1] != 0xCDFF && DataBuff.Data[1] != 0xCDDA && DataBuff.Data[1] != 0xCDF0)
+                {
+                    Msg[0] = ErrorFun;
+                }
+                else if(General.CheckSum_MINI(&DataBuff.Data[0], DataBuff.TargeCnt - 1) != DataBuff.Data[DataBuff.TargeCnt - 1])
+                {
+                    Msg[0] = ErrorCheck;
+                }
+                else
+                {
+                    /**
+                    * 根据接收到的不同命令码执行不同的操作：
+                    * - 0xCDFF: 结束命令，初始化变量
+                    * - 0xCDF0: 开始命令，设置目标包数量并重置数据缓冲区
+                    * - 0xCDDA: 数据接收，检查包序号、地址范围和校验和
+                    */
+                    switch(DataBuff.Data[1])
+                    {
+                        case 0xCDFF://结束命令
+                        if(DataBuff.PackageTarge == DataBuff.PackageCnt - 1)
+                        {
+                            Msg[0] = ReceptOK;
+                            UpData = 0;
+                        }
+                        else
+                        {
+                            Msg[0] = ErrorPack;
+                        }
+                        break;
+
+                        case 0xCDF0://开始命令
+                        DataBuff.PackageTarge = DataBuff.Data[2];
+                        DataBuff.PackageCnt = 1;
+                        if(BootFlash.MyFlashErase() == 0)
+                        {
+                            Msg[0] = ReceptOK;
+                        }
+                        else
+                        {
+                            Msg[0] = ErrorFlash;
+                        }
+                        break;
+
+                        case 0xCDDA://数据接收
+                        AddrTemp = (Uint32)DataBuff.Data[3] << 16 | DataBuff.Data[4];
+                        if(DataBuff.Data[2] != DataBuff.PackageCnt)
+                        {
+                            Msg[0] = ErrorPack;
+                        }
+                        else if(AddrTemp < AddrMin || AddrTemp + (DataBuff.Data[5] - 1) > AddrMax) //需要修改为地址范围
+                        {
+                            Msg[0] = ErrorAddr;
+                        }
+                        break;
+
+                        default:
+                        Msg[0] = ErrorEnd;
+                        break;
+                    
+                    }
+                }
+
+
+                
+                if(DataBuff.Data[1] == 0xCDDA && Msg[0] == ReceptOK)
+                {
+                    if(BootFlash.MyFlashCode(DataBuff.Data) == 0)
+                    {
+                        DataBuff.PackageCnt++;
+                    }
+                    else
+                    {
+                        Msg[0] = ErrorCode;
+                    }
+                }
+                
+                SendString(Msg, MsgLen);
+
+                /**
+                    * 清空数据缓冲区，并重新设置目标数据长度。
+                    */
+                memset(DataBuff.Data, 0, sizeof(DataBuff.Data));
+                DataBuff.DataCnt = 0;
+                DataBuff.IsLowByte = 0;
+                DataBuff.TargeCnt = 0x0107;
+                memset(Msg, 0, sizeof(Msg));
+                MsgLen = 0;
             }
         }
         /**
@@ -319,7 +323,7 @@ void ClassSCI::UpDataTask()
  */
 interrupt void SCIARX_ISR(void)
 {
-    Uint8 temp = SciaRegs.SCIRXBUF.bit.RXDT;
+    Uint8 DataTemp = SciaRegs.SCIRXBUF.bit.RXDT;
     switch (SCI.DataBuff.DataCnt)
     {
         /**
@@ -328,9 +332,9 @@ interrupt void SCIARX_ISR(void)
          * 如果匹配则保存数据并进入下一接收状态
          */
         case 0:
-        if(temp == 0x01)
+        if(DataTemp == 0x01)
         {
-            SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = temp;
+            SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = DataTemp;
             SCI.DataBuff.DataCnt++;
         }
         break;
@@ -341,9 +345,9 @@ interrupt void SCIARX_ISR(void)
          * 验证失败则重置接收状态
          */
         case 1:
-        if(temp == 0xFF)
+        if(DataTemp == 0xFF)
         {
-            SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = temp;
+            SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = DataTemp;
             SCI.DataBuff.DataCnt++;
         }
         else
@@ -360,7 +364,7 @@ interrupt void SCIARX_ISR(void)
          * 4. 校验失败则仅重置接收缓冲区
          */
         case 5:
-        SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = temp;
+        SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = DataTemp;
         if(General.CRC16Modbus(SCI.DataBuff.Data, 4) == (SCI.DataBuff.Data[4] << 8 | SCI.DataBuff.Data[5]))
         {
             SciaRegs.SCIFFRX.bit.RXFFIENA = 0;
@@ -380,7 +384,7 @@ interrupt void SCIARX_ISR(void)
          * 递增数据计数器
          */
         default:
-        SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = temp;
+        SCI.DataBuff.Data[SCI.DataBuff.DataCnt] = DataTemp;
         SCI.DataBuff.DataCnt++;
         break;
     }

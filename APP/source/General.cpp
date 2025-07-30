@@ -75,7 +75,7 @@ Uint16 ClassGeneral::CheckSum_MINI(Uint16 *Data, int Length)
          * 注意：这里实际不需要额外处理，因为Length是元素个数
          * 但为安全考虑可以添加虚拟字节
          */
-        Uint8 Padding = 0;
+        Uint8 Padding = 0x00;
         Sum += Padding;
         if (Sum > 0xFFFF) {
             Sum = (Sum & 0xFFFF) + (Sum >> 16);
