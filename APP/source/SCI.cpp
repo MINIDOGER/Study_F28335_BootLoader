@@ -249,6 +249,7 @@ void ClassSCI::UpDataTask()
                         case 0xCDF0://开始命令
                         DataBuff.PackageTarge = DataBuff.Data[2];
                         DataBuff.PackageCnt = 1;
+                        DINT;
                         if(BootFlash.MyFlashErase() == 0)
                         {
                             Msg[0] = ReceptOK;
@@ -257,6 +258,7 @@ void ClassSCI::UpDataTask()
                         {
                             Msg[0] = ErrorFlash;
                         }
+                        EINT;
                         break;
 
                         case 0xCDDA://数据接收
@@ -282,6 +284,7 @@ void ClassSCI::UpDataTask()
                 
                 if(DataBuff.Data[1] == 0xCDDA && Msg[0] == ReceptOK)
                 {
+                    DINT;
                     if(BootFlash.MyFlashCode(DataBuff.Data) == 0)
                     {
                         DataBuff.PackageCnt++;
@@ -290,6 +293,7 @@ void ClassSCI::UpDataTask()
                     {
                         Msg[0] = ErrorCode;
                     }
+                    EINT;
                 }
                 
                 SendString(Msg, MsgLen);
